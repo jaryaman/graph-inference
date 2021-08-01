@@ -1,3 +1,12 @@
 **/.ipynb_checkpoints
 **/.idea
 **/__pycache__
+
+**/*.bbl 
+**/*.blg  
+**/*.out  
+**/*.synctex.gz
+**/*.aux  
+**/*.log  
+**/*.pdf  
+

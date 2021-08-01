@@ -1,0 +1,229 @@
+% Preamble ==================================================================
+\documentclass[11pt]{article}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bottom= 1.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+
+\usepackage{tensor}
+\usepackage{cancel}
+\usepackage{wasysym}
+\usepackage{braket}
+
+\usepackage{amsthm} % theorem
+
+\numberwithin{equation}{section}
+
+\usepackage{titlesec,dsfont}
+
+%Format section heading style
+\usepackage{sectsty}
+\sectionfont{\sffamily\bfseries\large}
+\subsectionfont{\sffamily\normalsize\slshape}
+\subsubsectionfont{\sffamily\small\itshape}
+\paragraphfont{\sffamily\small\textbf}
+
+
+%Put period after section number
+\makeatletter
+\def\@seccntformat#1{\csname the#1\endcsname.\quad}
+\makeatother
+
+%Bibliography
+\usepackage[round]{natbib}
+\bibliographystyle{genetics}
+
+%Format captions
+\usepackage[ labelsep=period, justification=raggedright, margin=10pt,font={small},labelfont={small,normal,bf,sf}]{caption}
+
+\setlength{\parskip}{0ex} %No space between paragraphs.
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\newcommand\indep{\protect\mathpalette{\protect\independenT}{\perp}}
+\newcommand{\nindep}{\not\!\perp\!\!\!\perp}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+%PUT ME LAST--------------------------------------------------
+\usepackage[colorlinks=true
+,urlcolor=blue
+,anchorcolor=blue
+,citecolor=blue
+,filecolor=blue
+,linkcolor=black
+,menucolor=blue
+,linktocpage=true
+,pdfproducer=medialab
+,pdfa=true
+]{hyperref}
+
+\makeatother %Put this last of all
+
+% Symbol definitions
+\newcommand{\defeq}{\coloneqq}
+\renewcommand{\d}[1]{\ensuremath{\operatorname{d}\!{#1}}}
+\newcommand{\dpow}[2]{\ensuremath{\operatorname{d}^{#2}\!{#1}}}
+\newcommand{\deriv}[2]{\frac{\ensuremath{\operatorname{d}\!{#1}}}{\ensuremath{\operatorname{d}\!{#2}}}}
+\newcommand{\derivn}[3]{\frac{\ensuremath{\operatorname{d}^{#1}\!{#2}}}{\ensuremath{\operatorname{d}\!{#3}^{#1}}}}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\tr}{tr}
+\newcommand{\tn}[2]{\tensor{#1}{#2}}
+
+% Make theorems bold
+\makeatletter
+\def\th@plain{%
+  \thm@notefont{}% same as heading font
+  \itshape % body font
+}
+\def\th@definition{%
+  \thm@notefont{}% same as heading font
+  \normalfont % body font
+}
+\makeatother
+
+% Theorem definitions
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{defn}{Definition}[section]
+\newtheorem{cor}{Corollary}[section]
+\newtheorem{prop}{Property}[section]
+\newtheorem{rle}{Rule}[section]
+\newtheorem{lma}{Lemma}[section]
+
+\newcommand{\bs}{\boldsymbol}
+
+%Preamble end--------------------------------------------------
+
+
+\begin{document}
+
+
+
+\begin{flushleft}
+\textbf{\Large RGG inference}
+\end{flushleft}
+
+\begin{flushleft}
+Author: Juvid Aryaman
+
+Last compiled: \today
+\end{flushleft}
+
+\section{Models}
+
+\subsection{Soft random geometric graph}
+
+Define the spatial Bernoulli graph as:
+\begin{equation}
+P(Y=y|D) = \prod_{i,j} B(Y_{ij} = y_{ij}| \mathcal{F}(D_{ij}, \theta))
+\end{equation}
+where $Y$ is the random graph adjacency matrix, $D$ is a matrix of inter-vertex distances, $B$ is the Bernoulli pmf, and $\mathcal{F}$ is a function taking distances into the $[0,1]$ interval. The log likelihood is
+\begin{equation}
+l = \sum_{ij}[ y_{ij}\log(\mathcal{F}(D_{ij})) + (1-y_{ij})  \log(1 - \mathcal{F}(D_{ij})   ]
+\end{equation}
+\noindent Some choices of $\mathcal{F}(D_{ij}, \theta)$ include:
+\begin{enumerate}
+\item Exponential: $\mathcal{F}(D_{ij}, \theta) = e^{-\lambda_r D_{ij}}$
+\item Sigmoidal: $\mathcal{F}(D_{ij}, \theta) = 1/(1 + e^{\lambda_r D_{ij}})$
+\end{enumerate}
+We can do inference in Pymc3 easily in either case.
+
+\subsection{Poissonian geometric graph}
+We define a Poissonian geometric graph as a multigraph with no self-edges, where the expected number of edges between nodes $i$ and $j$ is $\mathcal{F}(D_{ij}, \theta)$. The likelihood may be written as:
+\begin{equation}
+P(G|D, \theta) = \prod_{i<j} \frac{(\mathcal{F}(D_{ij}, \theta))^{A_{ij}}}{A_{ij}!} \exp(-\mathcal{F}(D_{ij}, \theta))
+\end{equation}
+\noindent Some choices of $\mathcal{F}(D_{ij}, \theta)$ include:
+\begin{enumerate}
+\item Exponential: $\mathcal{F}(D_{ij}, \theta) = \lambda_0 e^{-\lambda_r D_{ij}}$
+\item Sigmoidal: $\mathcal{F}(D_{ij}, \theta) = \lambda_0/(1 + e^{\lambda_r D_{ij}})$
+\end{enumerate}
+
+\subsection{Degree-corrected Poissonian geometric graph}
+We define a degree-corrected Poissonian geometric graph as a multigraph with no self-edges, where the expected number of edges between nodes $i$ and $j$ is $k_i k_j \mathcal{F}(D_{ij}, \theta)$. The likelihood may be written as:
+\begin{equation}
+P(G|D, \theta) = \prod_{i<j} \frac{(k_i k_j \mathcal{F}(D_{ij}, \theta))^{A_{ij}}}{A_{ij}!} \exp(- k_i k_j \mathcal{F}(D_{ij}, \theta))
+\end{equation}
+\noindent Some choices of $\mathcal{F}(D_{ij}, \theta)$ include:
+\begin{enumerate}
+\item Exponential: $\mathcal{F}(D_{ij}, \theta) = \lambda_0 e^{-\lambda_r D_{ij}}$
+\item Sigmoidal: $\mathcal{F}(D_{ij}, \theta) = \lambda_0/(1 + e^{\lambda_r D_{ij}})$
+\end{enumerate}
+We interpret $k_i$ as ``KOL-ness''.
+
+\newpage
+
+
+
+\section*{Literature}
+
+\section{Garrod (2020)}
+In \citep{Garrod20}, the probability of individuals $i$ and $j$ sharing a social tie is given by
+\begin{equation}
+P(A_{ij} = A_{ji} = 1| x_i, x_j, \theta) = f(d(x_i, x_j), \theta)
+\end{equation}
+where $d(x_i, x_j)$ is the social distance metric between individuals $i$ and $j$, and $\theta$ are parameters. This can be Euclidean distance if we only have geographic position. For geographic distance, it is common to consider exponential or power law decay \citep{Daraganova12}. A typical choice might be
+\begin{equation}
+f(d(x_i, x_j), \theta) = \frac{1}{1 + e^{d(x_i, x_j)}}.
+\end{equation}
+Often, one reduces soft RGGs down to a model in which each node belongs to one of a finite number of blocks, with specified probabilities connecting within and between these blocks, called a stochastic block model.
+
+Tuning the embedding space, distance metric, and connection probability allow you to create networks with different properties. For instance, embedding in a hyperbolic space allows us to generate graphs with heterogeneous degree distributions. Embedding graphs in Lorentzian spacetime (i.e. one dimension being time) allows us to generate directed networks; this is useful for e.g. citation networks.
+
+\section{Butts (2012)}
+In \citep{Butts12}, a spatial Bernoulli graph is defined as 
+\begin{equation}
+P(Y=y|D) = \prod_{i,j} B(Y_{ij} = y_{ij}| \mathcal{F}(D_{ij}, \theta))
+\end{equation}
+\noindent where $Y$ is the random graph adjacency matrix, $D$ is a matrix of inter-vertex distances, $B$ is the Bernoulli pmf, and $F$ is a function taking distances into the $[0,1]$ interval.
+
+
+\section{Karrer (2011)}
+\citep{Karrer11} defines a degree-corrected stochastic blockmodel. 
+
+\subsection{Standard (Poissonian) stochastic blockmodel}
+For a ``standard'' stochastic blockmodel, they allow their network to contain \textbf{multiedges}: i.e. more than one edge between any two nodes: this is for computational convenience. Denote
+\begin{enumerate}[nosep]
+\item $\text{Poisson}(\psi_{rs})=$ number of edges between nodes $r$ and $s$. This permits self-edges.
+\item $A_{ij} = $ number of edges between $i$ and $j$; $A_{ii} = $ \textbf{twice} the number of self-edges for node $i$
+\item $\omega_{rs}= \mathbb{E}(A_{ij})$ given that node $i$ exists in group $r$ and node $j$ exists in node $s$
+\item $g_i=$ group assignment of node $i$
+\end{enumerate}
+\noindent The likelihood is therefore
+\begin{equation}
+P(G|\omega, g) = \prod_{i<j} \frac{(\omega_{g_i g_j})^{A_{ij}}}{A_{ij}!}\exp(- \omega_{g_i g_j}) \times \prod_{i} \frac{(\frac{1}{2}\omega_{g_i g_i})^{A_{ii}/2}}{(A_{ii}/2)!}\exp(- \frac{1}{2} \omega_{g_i g_i}).
+\end{equation}
+
+Define 
+\begin{equation}
+m_{rs} = \sum_{ij} A_{ij} \delta_{g_i, r} \delta_{g_j, s}
+\end{equation}
+
+\subsection{Degree-corrected stochastic blockmodel}
+Introduce a new set of parameters $\theta_i$ controlling the expected degrees of vertices $i$. Let
+\begin{equation}
+\mathbb{E}(A_{ij}) = \theta_i \theta_j \omega_{g_i g_j}.
+\end{equation}
+Hence
+\begin{equation}
+P(G|\omega, g) = \prod_{i<j} \frac{(\theta_i \theta_j \omega_{g_i g_j})^{A_{ij}}}{A_{ij}!}\exp(- \theta_i \theta_j \omega_{g_i g_j}) \times \prod_{i} \frac{(\frac{1}{2} \theta_i^2 \omega_{g_i g_i})^{A_{ii}/2}}{(A_{ii}/2)!}\exp(- \frac{1}{2} \theta_i^2 \omega_{g_i g_i})
+\end{equation}
+The $\theta$ parameters are arbitrary to within a multiplicative constant that is absorbed into the $\omega$ parameters. The normalization of $\theta$ can be fixed by imposing the constraint
+\begin{equation}
+\sum_i \theta_i \delta_{g_i r} = 1
+\end{equation}
+for all groups $r$. Hence $\theta_i$ is the probability that an edge connected to the community which $i$ belongs lands on vertex $i$ itself [\textbf{TODO}: Don't understand]. With this constraint, the log likelihood simplifies to (up to constant factors)
+\begin{equation}
+\log P(G|\theta, \omega, g) = 2 \sum_i k_i \log \theta_i + \sum_{rs} (m_{rs} \log \omega_{rs} - \omega_{rs})
+\end{equation}
+
+
+
+\newpage
+\bibliography{rgg-inference.bib} 
+
+\end{document}
