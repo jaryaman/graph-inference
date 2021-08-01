@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 from networkx.linalg.graphmatrix import adjacency_matrix
 from networkx.utils import nodes_or_number, py_random_state
-from tqdm import tqdm
+
 
 
 def make_inter_vertex_distances(G, p=2):
@@ -13,7 +13,7 @@ def make_inter_vertex_distances(G, p=2):
     n = len(pos)
     distance = np.zeros((n, n))
 
-    for i in tqdm(range(n)):
+    for i in range(n)   :
         for j in range(n):
             distance[i, j] = (sum(abs(a - b) ** p for a, b in zip(pos[i], pos[j]))) ** (1 / p)
 
@@ -110,6 +110,30 @@ def poissonian_random_geometric_graph(
         u, v = edge
         dist = (sum(abs(a - b) ** p for a, b in zip(pos[u], pos[v]))) ** (1 / p)
         return rng.poisson(p_dist(dist)) * [(u, v)]
+
+    for edge in geometric_edges(G, radius, p):
+        G.add_edges_from(multiply_edge_poisson(edge))
+
+    return G
+
+
+@nodes_or_number(0)
+def deg_corrected_poissonian_random_geometric_graph(
+        n, radius, ki, p_dist, rng, dim=2, pos=None, p=2,
+):
+    n_name, nodes = n
+    G = nx.MultiGraph()
+    G.name = f"deg_corrected_poissonian_random_geometric_graph({n}, {radius}, {dim})"
+    G.add_nodes_from(nodes)
+
+    if pos is None:
+        pos = {v: [rng.random() for i in range(dim)] for v in nodes}
+    nx.set_node_attributes(G, pos, "pos")
+
+    def multiply_edge_poisson(edge):
+        u, v = edge
+        dist = (sum(abs(a - b) ** p for a, b in zip(pos[u], pos[v]))) ** (1 / p)
+        return rng.poisson(p_dist(dist, ki[u], ki[v])) * [(u, v)]
 
     for edge in geometric_edges(G, radius, p):
         G.add_edges_from(multiply_edge_poisson(edge))
