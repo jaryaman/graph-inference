@@ -10,3 +10,4 @@
 **/*.log  
 **/*.pdf  
 **/build
+**/*.netcdf
