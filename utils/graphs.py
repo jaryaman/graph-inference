@@ -5,13 +5,15 @@ import networkx as nx
 import numpy as np
 from networkx.linalg.graphmatrix import adjacency_matrix
 from networkx.utils import nodes_or_number, py_random_state
+import torch
 
+from tqdm import tqdm
 
 
 def make_inter_vertex_distances(G, p=2):
     pos = G.nodes(data="pos")
     n = len(pos)
-    distance = np.zeros((n, n))
+    distance = torch.zeros((n, n))
 
     for i in range(n)   :
         for j in range(n):
@@ -134,8 +136,9 @@ def deg_corrected_poissonian_random_geometric_graph(
         u, v = edge
         dist = (sum(abs(a - b) ** p for a, b in zip(pos[u], pos[v]))) ** (1 / p)
         return rng.poisson(p_dist(dist, ki[u], ki[v])) * [(u, v)]
-
-    for edge in geometric_edges(G, radius, p):
+    
+    edges = geometric_edges(G, radius, p)
+    for edge in tqdm(edges):
         G.add_edges_from(multiply_edge_poisson(edge))
 
     return G
